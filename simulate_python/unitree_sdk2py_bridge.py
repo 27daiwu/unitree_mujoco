@@ -178,8 +178,8 @@ class UnitreeSdk2Bridge:
                             for key in [
                                 0,
                                 0,
-                                int(self.joystick.get_axis(self.axis_id["LT"]) > 0),
-                                int(self.joystick.get_axis(self.axis_id["RT"]) > 0),
+                                int(self.joystick.get_button(self.button_id["LT"])),
+                                int(self.joystick.get_button(self.button_id["RT"])),
                                 int(self.joystick.get_button(self.button_id["SELECT"])),
                                 int(self.joystick.get_button(self.button_id["START"])),
                                 int(self.joystick.get_button(self.button_id["LB"])),
@@ -263,12 +263,8 @@ class UnitreeSdk2Bridge:
             key_state[self.key_map["select"]] = self.joystick.get_button(
                 self.button_id["SELECT"]
             )
-            key_state[self.key_map["R2"]] = (
-                self.joystick.get_axis(self.axis_id["RT"]) > 0
-            )
-            key_state[self.key_map["L2"]] = (
-                self.joystick.get_axis(self.axis_id["LT"]) > 0
-            )
+            key_state[self.key_map["R2"]] = self.joystick.get_button(self.button_id["RT"])
+            key_state[self.key_map["L2"]] = self.joystick.get_button(self.button_id["LT"])
             key_state[self.key_map["F1"]] = 0
             key_state[self.key_map["F2"]] = 0
             key_state[self.key_map["A"]] = self.joystick.get_button(self.button_id["A"])
@@ -295,6 +291,36 @@ class UnitreeSdk2Bridge:
     def SetupJoystick(self, device_id=0, js_type="xbox"):
         pygame.init()
         pygame.joystick.init()
+
+        # 第一步：先初始化按键和轴映射字典，避免多线程条件竞争
+        if js_type == "xbox":
+            self.axis_id = {
+                "LX": 0, "LY": 1, "RX": 3, "RY": 4, "LT": 2, "RT": 5, "DX": 6, "DY": 7,
+            }
+            self.button_id = {
+                "X": 2, "Y": 3, "B": 1, "A": 0, "LB": 4, "RB": 5, "SELECT": 6, "START": 7,
+            }
+        elif js_type == "switch":
+            self.axis_id = {
+                "LX": 0, "LY": 1, "RX": 2, "RY": 3, "LT": 5, "RT": 4, "DX": 6, "DY": 7,
+            }
+            self.button_id = {
+                "X": 3, "Y": 4, "B": 1, "A": 0, "LB": 6, "RB": 7, "SELECT": 10, "START": 11,
+            }
+        elif js_type == "switchpro":
+            self.axis_id = {
+                "LX": 0, "LY": 1, "RX": 2, "RY": 3,
+            }
+            self.button_id = {
+                "X": 3, "Y": 2, "B": 1, "A": 0, "LB": 5, "RB": 6, "SELECT": 9, "START": 10,
+                "LT": 7,  
+                "RT": 8,  
+            }
+        else:
+            print("Unsupported gamepad. ")
+            return  # 遇到不支持的手柄类型直接返回，避免后续逻辑抛出异常
+
+        # 第二步：字典完全初始化后，再实例化 joystick 对象
         joystick_count = pygame.joystick.get_count()
         if joystick_count > 0:
             self.joystick = pygame.joystick.Joystick(device_id)
@@ -302,54 +328,6 @@ class UnitreeSdk2Bridge:
         else:
             print("No gamepad detected.")
             sys.exit()
-
-        if js_type == "xbox":
-            self.axis_id = {
-                "LX": 0,  # Left stick axis x
-                "LY": 1,  # Left stick axis y
-                "RX": 3,  # Right stick axis x
-                "RY": 4,  # Right stick axis y
-                "LT": 2,  # Left trigger
-                "RT": 5,  # Right trigger
-                "DX": 6,  # Directional pad x
-                "DY": 7,  # Directional pad y
-            }
-
-            self.button_id = {
-                "X": 2,
-                "Y": 3,
-                "B": 1,
-                "A": 0,
-                "LB": 4,
-                "RB": 5,
-                "SELECT": 6,
-                "START": 7,
-            }
-
-        elif js_type == "switch":
-            self.axis_id = {
-                "LX": 0,  # Left stick axis x
-                "LY": 1,  # Left stick axis y
-                "RX": 2,  # Right stick axis x
-                "RY": 3,  # Right stick axis y
-                "LT": 5,  # Left trigger
-                "RT": 4,  # Right trigger
-                "DX": 6,  # Directional pad x
-                "DY": 7,  # Directional pad y
-            }
-
-            self.button_id = {
-                "X": 3,
-                "Y": 4,
-                "B": 1,
-                "A": 0,
-                "LB": 6,
-                "RB": 7,
-                "SELECT": 10,
-                "START": 11,
-            }
-        else:
-            print("Unsupported gamepad. ")
 
     def PrintSceneInformation(self):
         print(" ")
